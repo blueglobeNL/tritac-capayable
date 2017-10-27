@@ -1,0 +1,278 @@
+<?xml version="1.0"?>
+<!--
+/**
+ * @category    Tritac
+ * @package     Tritac_Capayable
+ * @copyright   Copyright (c) 2014 Tritac (http://www.tritac.com)
+ * @license     http://opensource.org/licenses/afl-3.0.php  Academic Free License (AFL 3.0)
+ */
+-->
+<config>
+    <modules>
+        <Tritac_Capayable>
+            <version>2.5.0</version>
+        </Tritac_Capayable>
+    </modules>
+
+    <global>
+        <blocks>
+            <capayable>
+                <class>Tritac_Capayable_Block</class>
+            </capayable>
+        </blocks>
+        <models>
+            <capayable>
+                <class>Tritac_Capayable_Model</class>
+                <resourceModel>capayable_resource</resourceModel>
+            </capayable>
+            <capayable_resource>
+                <class>Tritac_Capayable_Model_Resource</class>
+                <entities>
+                    <customer>
+                        <table>capayable_customer</table>
+                    </customer>
+                </entities>
+            </capayable_resource>
+        </models>
+        <helpers>
+            <capayable>
+                <class>Tritac_Capayable_Helper</class>
+            </capayable>
+        </helpers>
+        <resources>
+            <capayable_setup>
+                <setup>
+                    <module>Tritac_Capayable</module>
+                    <class>Tritac_Capayable_Model_Resource_Setup</class>
+                </setup>
+                <connection>
+                    <use>core_setup</use>
+                </connection>
+            </capayable_setup>
+            <capayable_read>
+                <connection>
+                    <use>core_read</use>
+                </connection>
+            </capayable_read>
+            <capayable_write>
+                <connection>
+                    <use>core_write</use>
+                </connection>
+            </capayable_write>
+        </resources>
+
+        <payment>
+            <groups>
+                <capayable>Capayable</capayable>
+            </groups>
+        </payment>
+
+        <sales>
+            <quote>
+                <totals>
+                    <capayable>
+                        <class>capayable/quote_address_total</class>
+                        <after>subtotal,discount,shipping</after>
+                        <before>tax,grand_total</before>
+                        <renderer>capayable/checkout_fee</renderer>
+                        <admin_renderer>capayable/adminhtml_sales_order_create_totals_fee</admin_renderer>
+                    </capayable>
+                    <capayable_tax>
+                        <class>capayable/quote_address_total_tax</class>
+                        <after>subtotal,discount,shipping,tax</after>
+                        <before>grand_total</before>
+                    </capayable_tax>
+                </totals>
+            </quote>
+            <order_invoice>
+                <totals>
+                    <capayable>
+                        <class>capayable/invoice_total</class>
+                    </capayable>
+                    <capayable_tax>
+                        <class>capayable/invoice_tax</class>
+                    </capayable_tax>
+                </totals>
+            </order_invoice>
+            <order_creditmemo>
+                <totals>
+                    <capayable>
+                        <class>capayable/creditmemo_total</class>
+                    </capayable>
+                </totals>
+            </order_creditmemo>
+        </sales>
+        <pdf>
+            <totals>
+                <capayable translate="title">
+                    <title>Capayable Fee</title>
+                    <source_field>capayable_fee</source_field>
+                    <font_size>7</font_size>
+                    <display_zero>0</display_zero>
+                    <sort_order>450</sort_order>
+                    <model>capayable/sales_pdf_fee</model>
+                </capayable>
+            </totals>
+        </pdf>
+
+        <fieldsets>
+            <sales_convert_quote_payment>
+                <test2>
+                    <to_order_payment>*</to_order_payment>
+                </test2>
+            </sales_convert_quote_payment>
+        </fieldsets>
+        <events>
+            <sales_quote_collect_totals_after>
+                <observers>
+                    <capayable_collect>
+                        <type>singleton</type>
+                        <class>capayable/observer</class>
+                        <method>sales_quote_collect_totals_after</method>
+                    </capayable_collect>
+                </observers>
+            </sales_quote_collect_totals_after>
+            <sales_order_payment_place_end>
+                <observers>
+                    <capayable_place>
+                        <type>singleton</type>
+                        <class>capayable/observer</class>
+                        <method>sales_order_payment_place_end</method>
+                    </capayable_place>
+                </observers>
+            </sales_order_payment_place_end>
+            <sales_order_creditmemo_save_before>
+                <observers>
+                    <capayable_save>
+                        <type>singleton</type>
+                        <class>capayable/observer</class>
+                        <method>sales_order_creditmemo_save_before</method>
+                    </capayable_save>
+                </observers>
+            </sales_order_creditmemo_save_before>
+        </events>
+    </global>
+    <adminhtml>
+        <events>
+            <sales_order_shipment_save_after>
+                <observers>
+                    <capayable_after_shipment>
+                        <type>singleton</type>
+                        <class>capayable/observer</class>
+                        <method>processAfterShipment</method>
+                    </capayable_after_shipment>
+                </observers>
+            </sales_order_shipment_save_after>
+            <sales_order_load_after>
+                <observers>
+                    <capayable_order_load_after>
+                        <type>singleton</type>
+                        <class>capayable/observer</class>
+                        <method>processOrderInvoice</method>
+                    </capayable_order_load_after>
+                </observers>
+            </sales_order_load_after>
+            <!--
+                        <sales_order_invoice_save_after>
+                            <observers>
+                                <process_invoice_capayable>
+                                    <type>singleton</type>
+                                    <class>capayable/observer</class>
+                                    <method>processInvoiceCapayable</method>
+                                </process_invoice_capayable>
+                            </observers>
+                        </sales_order_invoice_save_after>
+            -->
+        </events>
+        <translate>
+            <modules>
+                <Tritac_Capayable>
+                    <files>
+                        <default>Tritac_Capayable.csv</default>
+                    </files>
+                </Tritac_Capayable>
+            </modules>
+        </translate>
+        <layout>
+            <updates>
+                <Tritac_Capayable>
+                    <file>capayable.xml</file>
+                </Tritac_Capayable>
+            </updates>
+        </layout>
+    </adminhtml>
+    <frontend>
+        <routers>
+            <capayable>
+                <use>standard</use>
+                <args>
+                    <module>Tritac_Capayable</module>
+                    <frontName>capayable</frontName>
+                </args>
+            </capayable>
+        </routers>
+        <translate>
+            <modules>
+                <Tritac_Capayable>
+                    <files>
+                        <default>Tritac_Capayable.csv</default>
+                    </files>
+                </Tritac_Capayable>
+            </modules>
+        </translate>
+        <layout>
+            <updates>
+                <Tritac_Capayable>
+                    <file>capayable.xml</file>
+                </Tritac_Capayable>
+            </updates>
+        </layout>
+    </frontend>
+
+    <default>
+        <payment>
+            <capayable_postpayment>
+                <active>0</active>
+                <model>capayable/postpayment</model>
+                <title>Capayable Postpayment</title>
+                <email_customer>1</email_customer>
+                <payment_action>authorize</payment_action>
+                <sort_order>10</sort_order>
+                <order_status>processing</order_status>
+                <instructions><![CDATA[Please transfer the amount due to
+Stichting Beheer Gelden Capayable
+IBAN NL42INGB0006528043
+Use the following number as
+the payment reference: %s]]>
+
+                </instructions>
+                <group>capayable</group>
+                <devlogfile>dev.capayable.log</devlogfile>
+            </capayable_postpayment>
+            <capayable_payinterms>
+                <active>0</active>
+                <model>capayable/payinterms</model>
+                <title>Capayable Pay in terms</title>
+                <email_customer>1</email_customer>
+                <payment_action>authorize</payment_action>
+                <sort_order>20</sort_order>
+                <order_status>processing</order_status>
+                <instructions><![CDATA[Please pay first amount with iDeal, then
+transfer the next 2 amounts due to
+Stichting Beheer Gelden Capayable
+IBAN NL42INGB0006528043
+Use the following number as
+the payment reference: %s]]>
+
+                </instructions>
+                <group>capayable</group>
+                <devlogfile>dev.capayable.log</devlogfile>
+            </capayable_payinterms>
+        </payment>
+        <sales>
+            <totals_sort>
+                <capayable>80</capayable>
+            </totals_sort>
+        </sales>
+    </default>
+</config>

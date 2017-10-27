@@ -1,0 +1,9 @@
+app/code/community/Tritac/Capayable		                    app/code/community/Tritac/Capayable
+app/design/adminhtml/default/default/template/capayable		app/design/adminhtml/default/default/template/capayable
+app/design/adminhtml/default/default/layout/capayable.xml	app/design/adminhtml/default/default/layout/capayable.xml
+app/design/frontend/base/default/template/capayable		    app/design/frontend/base/default/template/capayable
+app/design/frontend/base/default/layout/capayable.xml	    app/design/frontend/base/default/layout/capayable.xml
+app/etc/modules/Tritac_Capayable.xml		                app/etc/modules/Tritac_Capayable.xml
+app/locale/nl_NL/Tritac_Capayable.csv		                app/locale/nl_NL/Tritac_Capayable.csv
+lib/Tritac/CapayableApiClient		                        lib/Tritac/CapayableApiClient
+skin/adminhtml/default/default/capayable/*               	skin/adminhtml/default/default/capayable

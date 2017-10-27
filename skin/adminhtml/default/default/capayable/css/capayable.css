@@ -1,0 +1,100 @@
+.content-header h3.capayable-header {
+    background: url('images/capayable-logo.png') no-repeat scroll 0 0;
+    display: block;
+    height: 30px;
+    padding: 25px 0 0 175px;
+    width: 0px;
+    color: #fff;
+}
+
+.content-header-floating h3.capayable-header {
+    color: #fdfaa4;
+}
+
+ul.capayable_docs li.pdf, ul.capayable_docs li.doc, ul.capayable_docs li.htm{
+    background-repeat: no-repeat;
+    background-position: 0 50%;
+    padding: 3px 0 3px 23px;
+    margin: .4em 0;
+}
+
+ul.capayable_docs li.pdf { background-image: url('images/pdf.png'); }
+ul.capayable_docs li.doc { background-image: url('images/doc.png'); }
+ul.capayable_docs li.htm { background-image: url('images/htm.png'); }
+
+/* General */
+#capayable_support p,
+#capayable_support ul,
+#capayable_support ol { padding:6px 0 10px;  }
+#capayable_support ul.capayable-config-warning {list-style:disc inside none; }
+#capayable_support ol { list-style:decimal inside; }
+#capayable_support ol ol { list-style:lower-alpha inside; padding:0 0 10px 12px; }
+#capayable_support ul ul { list-style:none; padding:0 0 10px 12px; }
+#capayable_support h2.content-heading { color:#ea7601; border-bottom:4px solid #dfdfdf; }
+#capayable_support h4,
+#capayable_support p { margin:0;}
+#capayable_support a.pdf { display:inline-block; height:16px; line-height:16px; padding:0 0 0 21px; }
+#capayable_support a.link { display: inline-block; height: 16px; line-height: 16px; padding: 0 0 0 21px; }
+#capayable_support .text-box { background:#fff; padding:9px 16px; margin:6px 0 10px; border:1px solid #ccc; }
+#capayable_support table.contact { margin:0 0 25px -1px; }
+#capayable_support table.contact td { padding:0; width:125px; }
+#capayable_support table.contact td.first {  padding-right:5px; }
+#capayable_support table.capayable td a.logo_image { margin-left:10px; }
+#capayable_support table.capayable td a.logo_image img { margin-top:3px; }
+
+/* Legend */
+#capayable_support #legend li { }
+#capayable_support #legend li.disabled { background-position:0 4px; }
+#capayable_support #legend li.test { background-position:0 -25px; }
+#capayable_support #legend li.live { background-position:0 -54px; }
+#capayable_support #legend li.advanced { background-position:0 -83px; }
+
+/* Structure */
+#capayable_support .form-list,
+#capayable_support #supportWrap { width:100% !important; }
+#capayable_support #supportWrap .col-left,
+#capayable_support #supportWrap .col-right { width:50%; }
+#capayable_support #supportWrap .col-faux { padding:0 5px;  }
+
+#product_window .footer{
+    background: none !important;
+    padding: 0px !important;
+}
+
+#system_config_tabs .capayable-tab {
+    background: transparent url('images/capayable-tab.png') no-repeat scroll 18px 3px !important;
+    display: block;
+}
+#system_config_tabs .capayable-tab:hover {
+    background-color: #d8e6e6 !important;
+    border-right: 1px solid #8aa5a6;
+}
+#system_config_tabs .capayable-tab.active {
+    background-color: #fff !important;
+    border-right: medium none !important;
+}
+#system_config_tabs .capayable-tab span {
+    display: block;
+    padding-left: 44px;
+}
+#system_config_tabs .capayable-tab.active span {
+    background: rgba(0, 0, 0, 0) none repeat scroll 0 0;
+}
+
+
+#editSubscriptionLeftForm{
+    width:46%;
+    float:left;
+}
+
+#editSubscriptionRightForm{
+    width:46%;
+    float:right;
+}
+
+
+/*
+#row_capayable_settings_capayable_email, #row_capayable_settings_days_before_end_subscription{
+    display: none;
+}
+*/

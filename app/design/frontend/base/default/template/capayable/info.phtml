@@ -1,0 +1,14 @@
+<?php
+echo $this->getMethod()->getTitle();
+?>
+
+<?php
+if($invoice = $this->getInvoice()) {
+    $incrementId = $invoice->getIncrementId();
+    if($instructions = Mage::helper('capayable')->getInstructions($this->getMethod()->getCode(), $invoice->getStoreId())){
+        foreach($instructions as $n => $line){
+            $instructions[$n] = $this->__($line,$incrementId);
+        }
+        echo '<br />' . implode('<br />',$instructions);
+    }
+}

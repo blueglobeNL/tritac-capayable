@@ -1,0 +1,23 @@
+<?php
+/**
+ * @see Mage_Payment_Block_Info
+ */
+?>
+<p><?php echo $this->escapeHtml($this->getMethod()->getTitle()) ?></p>
+<?php $invoice = $this->getInvoice();
+if ($invoice && $lines = Mage::helper('capayable')->getInstructions($invoice->getStoreId())): ?>
+<table>
+    <tbody>
+        <tr>
+            <td>
+            <?php
+            foreach($lines as $n => $line){
+                $lines[$n] = $this->__($line,$invoice->getIncrementId());
+            }
+            echo implode('<br />',$lines);
+            ?>
+            </td>
+        </tr>
+    </tbody>
+</table>
+<?php endif; ?>

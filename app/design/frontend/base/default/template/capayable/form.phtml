@@ -1,0 +1,493 @@
+<?php
+/**
+ * Magento
+ *
+ * NOTICE OF LICENSE
+ *
+ * This source file is subject to the Academic Free License (AFL 3.0)
+ * that is bundled with this package in the file LICENSE_AFL.txt.
+ * It is also available through the world-wide-web at this URL:
+ * http://opensource.org/licenses/afl-3.0.php
+ * If you did not receive a copy of the license and are unable to
+ * obtain it through the world-wide-web, please send an email
+ * to license@magentocommerce.com so we can send you a copy immediately.
+ *
+ * DISCLAIMER
+ *
+ * Do not edit or add to this file if you wish to upgrade Magento to newer
+ * versions in the future. If you wish to customize Magento for your
+ * needs please refer to http://www.magentocommerce.com for more information.
+ *
+ * @category    design
+ * @package     base_default
+ * @copyright   Copyright (c) 2013 Magento Inc. (http://www.magentocommerce.com)
+ * @license     http://opensource.org/licenses/afl-3.0.php  Academic Free License (AFL 3.0)
+ */
+?>
+<?php
+
+    // If allowed IPs are set in admin, check if payment method should be available
+    if ($this->isAllowed()) {
+
+        $_code      = $this->getMethodCode();
+        $_quote     = $this->getQuote();
+        $_customer  = $this->getCustomer();
+
+        $isLoggedIn     = Mage::helper('customer')->isLoggedIn();
+        $cocNumberCheck = Mage::getStoreConfig('payment/capayable/chamber_of_commerce_check');
+        $billingAddress = $_quote->getBillingAddress();
+
+        // Extra firstname(s)
+        $names = explode(' ', $billingAddress->getFirstname());
+        $initials = '';
+
+        // Loop through firstname entries, fetching first character
+        if (count($names) > 0) {
+            foreach ($names as $name) {
+                $initials.= $name[0].'. ';
+            }
+            $initials = trim($initials);
+        }
+
+        // Check for third party checkout modules
+        $hasMageWorldOSC    = Mage::helper('core')->isModuleEnabled('MW_Onestepcheckout');
+        $hasIdevOSC         = Mage::helper('core')->isModuleEnabled('Idev_OneStepCheckout');
+        $hasIwdOPC          = Mage::helper('core')->isModuleEnabled('IWD_OnepageCheckout');
+
+        $postcode           = $billingAddress->getPostcode();
+        $city               = $billingAddress->getCity();
+        $addressLines       =  $billingAddress->getStreet();
+        $addressLineCount   = count($billingAddress->getStreet());
+        $streetName         = null;
+        $houseNumber        = null;
+        $houseNumberSuffix  = null;
+        $numAddressFields   = 0;
+
+        // Pregmatch pattern, dutch addresses
+        $pattern = '#^([a-z0-9 [:punct:]\']*) ([0-9]{1,5})([a-z0-9 \-/]{0,})$#i';
+
+        // Either there is just one line to enter the street and house number, or there
+        // are 2 but the second field was not filled out (used for a house number)
+        if ($addressLineCount == 1 || ($addressLineCount == 2 && empty($addressLines[1]))) {
+
+            // if, for instance, postcode check is used, then it is very possible that
+            // there is nothing IN $addressLines[0] so please check first:
+            if(strlen($addressLines[0]) > 0) {
+                preg_match($pattern, $addressLines[0], $addressParts);
+
+                // and then still there is no garantee that you have an array
+                // so if you don't check you get the Undefined offset: 2  in .../capayable/form.phtml error
+                if(count($addressParts) > 1) {
+                    $streetName = $addressParts[1];
+                    $houseNumber = $addressParts[2];
+                    $houseNumberSuffix = (isset($addressParts[3])) ? $addressParts[3] : '';
+                    $numAddressFields = 1;
+                }
+            }
+
+        } elseif ($addressLineCount == 2) {
+
+            $streetName = trim($addressLines[0]);
+            list($houseNumber, $houseNumberSuffix) = sscanf($addressLines[1], "%d%[^\t\n]");
+
+            $houseNumber = trim($houseNumber);
+            $houseNumberSuffix = trim($houseNumberSuffix);
+            $numAddressFields = 2;
+
+        } elseif ($addressLineCount == 3) {
+
+            $streetName = trim($addressLines[0]);
+            $houseNumber = trim($addressLines[1]);
+            $houseNumberSuffix = trim($addressLines[2]);
+            $numAddressFields = 3;
+        }
+
+        // 1. Always show birthdate fields, this information is not stored in the quote
+        $_dob       = $this->getLayout()->createBlock('customer/widget_dob');
+
+        $dobDay     = $_dob->getDay();
+        $dobMonth   = $_dob->getMonth();
+        $dobYear    = $_dob->getYear();
+        $dobDateFormat = $_dob->getDateFormat();
+
+        // If customer is logged in, get birthdate
+        if ($isLoggedIn) {
+            $dobParts   = explode(' ',$_customer->getCustomerDob());
+            $dobParts   = explode('-',$dobParts[0]);
+            $dobDay     = $dobParts[2];
+            $dobMonth   = $dobParts[1];
+            $dobYear    = $dobParts[0];
+        }
+
+        // 2. Check if address field should be shown, if some info misses, show the fields
+        $showAddress = (!$streetName || !$houseNumber || !$postcode || !$city) ? true : false;
+        //$showAddress = true;
+
+?>
+
+<ul class="form-list" id="payment_form_<?php echo $_code ?>" style="display:none;">
+
+    <li>
+        <label for="<?php echo $_code?>_middlename" class="required"><em>*</em><?php echo $this->__('Initials')?></label>
+        <div class="input-box">
+            <input type="text" id="<?php echo $_code?>_middlename" name="payment[customer_middlename]" class="input-text required-entry" value="<?php echo $initials; ?>" />
+        </div>
+    </li>
+    <li>
+        <label for="<?php echo $_code?>_month" class="required"><em>*</em><?php echo $this->__('Date of Birth') ?></label>
+        <div class="input-box <?php echo $_code ?>-customer-dob customer-dob">
+            <div class="dob-day">
+                <input type="text" id="<?php echo $_code ?>_day" name="payment[day]" value="<?php echo $dobDay ?>" title="<?php echo $this->__('Day') ?>" class="input-text required-entry validate-dob" />
+                <label for="<?php echo $_code ?>_day"><?php echo $this->__('DD') ?></label>
+            </div>
+            <div class="dob-month">
+                <input type="text" id="<?php echo $_code ?>_month" name="payment[month]" value="<?php echo $dobMonth ?>" title="<?php echo $this->__('Month') ?>" class="input-text required-entry validate-dob" />
+                <label for="<?php echo $_code ?>_month"><?php echo $this->__('MM') ?></label>
+            </div>
+            <div class="dob-year">
+                <input type="text" id="<?php echo $_code ?>_year" name="payment[year]" value="<?php echo $dobYear ?>" title="<?php echo $this->__('Year') ?>" class="input-text required-entry validate-dob" />
+                <label for="<?php echo $_code ?>_year"><?php echo $this->__('YYYY') ?></label>
+            </div>
+            <div class="dob-full" style="display:none;">
+                <input type="hidden" id="<?php echo $_code ?>_dob" name="payment[customer_dob]" />
+            </div>
+            <div class="validation-advice" style="display:none;"></div>
+        </div>
+        <script type="text/javascript">
+            //<![CDATA[
+            var <?php echo $_code ?>_dob = new Varien.DOB('.<?php echo $_code ?>_dob', true, '<?php echo $dobDateFormat ?>');
+            //]]>
+        </script>
+    </li>
+
+    <?php if (!$_quote->getCustomerGender()): ?>
+        <li>
+            <label for="<?php echo $_code?>_gender" class="required"><em>*</em><?php echo $this->__('Gender') ?></label>
+            <div class="input-box">
+                <select id="<?php echo $_code?>_gender" name="payment[customer_gender]" title="<?php echo $this->__('Gender') ?>" class="validate-select">
+                    <?php
+                        $options = Mage::getResourceSingleton('customer/customer')->getAttribute('gender')->getSource()->getAllOptions();
+                    ?>
+                    <?php foreach ($options as $option):?>
+                        <option value="<?php echo $option['value'] ?>"><?php echo $this->__($option['label']) ?></option>
+                    <?php endforeach;?>
+                </select>
+            </div>
+        </li>
+    <?php endif ?>
+
+    <?php if($showAddress): ?>
+    <li>
+        <label for="<?php echo $_code?>_street" class="required"><em>*</em><?php echo $this->__('Street')?></label>
+        <div class="input-box">
+            <input type="text" id="<?php echo $_code?>_street" name="payment[street]" class="input-text required-entry" value="<?php echo $streetName; ?>" />
+        </div>
+    </li>
+    <li>
+        <label for="<?php echo $_code?>_house_number" class="required"><em>*</em><?php echo $this->__('House number')?></label>
+        <div class="input-box">
+            <input type="text" id="<?php echo $_code?>_house_number" name="payment[house_number]" class="validate-digits validate-greater-than-zero input-text required-entry" value="<?php echo $houseNumber; ?>" />
+        </div>
+    </li>
+    <li>
+        <label for="<?php echo $_code?>_house_suffix"><?php echo $this->__('House number suffix')?></label>
+        <div class="input-box">
+            <input type="text" id="<?php echo $_code?>_house_suffix" name="payment[house_suffix]" class="input-text" value="<?php echo $houseNumberSuffix; ?>" />
+        </div>
+    </li>
+    <li>
+        <label for="<?php echo $_code?>_postcode" class="required"><em>*</em><?php echo $this->__('Postal Code')?></label>
+        <div class="input-box">
+            <input type="text" id="<?php echo $_code?>_postcode" name="payment[postcode]" class="input-text required-entry" value="<?php echo $postcode; ?>" />
+        </div>
+    </li>
+    <li>
+        <label for="<?php echo $_code?>_city" class="required"><em>*</em><?php echo $this->__('City')?></label>
+        <div class="input-box">
+            <input type="text" id="<?php echo $_code?>_city" name="payment[city]" class="input-text required-entry" value="<?php echo $city; ?>" />
+        </div>
+    </li>
+
+    <?php else: ?>
+
+    <input type="hidden" id="<?php echo $_code?>_street" name="payment[street]" value="<?php echo $streetName ?>" />
+    <input type="hidden" id="<?php echo $_code?>_house_number" name="payment[house_number]" value="<?php echo $houseNumber; ?>" />
+    <input type="hidden" id="<?php echo $_code?>_house_suffix" name="payment[house_suffix]" value="<?php echo $houseNumberSuffix; ?>" />
+    <input type="hidden" id="<?php echo $_code?>_postcode" name="payment[postcode]" value="<?php echo $postcode; ?>" />
+    <input type="hidden" id="<?php echo $_code?>_city" name="payment[city]" value="<?php echo $city; ?>" />
+
+    <?php endif; ?>
+
+    <?php if (!$billingAddress->getTelephone()): ?>
+        <li>
+            <label for="<?php echo $_code?>_telephone" class="required"><em>*</em><?php echo $this->__('Telephone') ?></label>
+            <div class="input-box">
+                <input type="text" id="<?php echo $_code?>_telephone" name="payment[telephone]" class="input-text required-entry" value="" />
+            </div>
+        </li>
+    <?php endif ?>
+
+    <?php if(!$this->isCompanyDisabled()): ?>
+        <li>
+            <label for="<?php echo $_code?>_is_corporation"><?php echo $this->__('Is Corporation')?></label>
+            <div class="input-box">
+                <select name="payment[is_corporation]" id="<?php echo $_code ?>_is_corporation">
+                    <option value="0" <?php if(!$billingAddress->getCompany()): ?>selected="selected"<?php endif; ?>><?php echo $this->__('No')?></option>
+                    <option value="1" <?php if($billingAddress->getCompany()): ?>selected="selected"<?php endif; ?>><?php echo $this->__('Yes')?></option>
+                </select>
+            </div>
+        </li>
+        <li id="<?php echo $_code ?>_is_sole_wrapper">
+            <label for="<?php echo $_code?>_is_sole"><?php echo $this->__('Is Sole Proprietor')?></label>
+            <div class="input-box">
+                <select name="payment[is_sole]" id="<?php echo $_code ?>_is_sole">
+                    <option value="0" <?php if($_customer->getIsSole() == 0 && $isLoggedIn): ?>selected="selected"<?php endif ?>><?php echo $this->__('No')?></option>
+                    <option value="1" <?php if($_customer->getIsSole() == 1 && $isLoggedIn): ?>selected="selected"<?php endif ?>><?php echo $this->__('Yes')?></option>
+                </select>
+            </div>
+        </li>
+        <li id="<?php echo $_code ?>_coc_number_wrapper">
+            <label for="<?php echo $_code?>_coc_number"><?php echo $this->__('Chamber of Commerce Number')?></label>
+            <div class="input-box">
+                <input type="text" id="<?php echo $_code?>_coc_number" name="payment[coc_number]" class="input-text" value="<?php if($_customer->getCocNumber() && $isLoggedIn) echo $_customer->getCocNumber()?>" />
+            </div>
+        </li>
+        <li id="<?php echo $_code ?>_corporation_name_wrapper">
+            <label for="<?php echo $_code?>_corporation_name"><?php echo $this->__('Corporation Name')?></label>
+            <div class="input-box">
+                <input type="text" id="<?php echo $_code?>_corporation_name" name="payment[corporation_name]" class="input-text"  value="<?php echo $billingAddress->getCompany(); ?>" />
+            </div>
+        </li>
+    <?php endif ?>
+
+    </ul>
+
+<script type="text/javascript">
+//<![CDATA[
+/**
+ * Event.simulate(@element, eventName[, options]) -> Element
+ *
+ * - @element: element to fire event on
+ * - eventName: name of event to fire (only MouseEvents and HTMLEvents interfaces are supported)
+ * - options: optional object to fine-tune event properties - pointerX, pointerY, ctrlKey, etc.
+ *
+ *    $('foo').simulate('click'); // => fires "click" event on an element with id=foo
+ *
+ **/
+(function(){
+
+  var eventMatchers = {
+    'HTMLEvents': /^(?:load|unload|abort|error|select|change|submit|reset|focus|blur|resize|scroll)$/,
+    'MouseEvents': /^(?:click|mouse(?:down|up|over|move|out))$/
+  }
+  var defaultOptions = {
+    pointerX: 0,
+    pointerY: 0,
+    button: 0,
+    ctrlKey: false,
+    altKey: false,
+    shiftKey: false,
+    metaKey: false,
+    bubbles: true,
+    cancelable: true
+  }
+
+  Event.simulate = function(element, eventName) {
+    var options = Object.extend(defaultOptions, arguments[2] || { });
+    var oEvent, eventType = null;
+
+    element = $(element);
+
+    for (var name in eventMatchers) {
+      if (eventMatchers[name].test(eventName)) { eventType = name; break; }
+    }
+
+    if (!eventType)
+      throw new SyntaxError('Only HTMLEvents and MouseEvents interfaces are supported');
+
+    if (document.createEvent) {
+      oEvent = document.createEvent(eventType);
+      if (eventType == 'HTMLEvents') {
+        oEvent.initEvent(eventName, options.bubbles, options.cancelable);
+      }
+      else {
+        oEvent.initMouseEvent(eventName, options.bubbles, options.cancelable, document.defaultView,
+          options.button, options.pointerX, options.pointerY, options.pointerX, options.pointerY,
+          options.ctrlKey, options.altKey, options.shiftKey, options.metaKey, options.button, element);
+      }
+      element.dispatchEvent(oEvent);
+    }
+    else {
+      options.clientX = options.pointerX;
+      options.clientY = options.pointerY;
+      oEvent = Object.extend(document.createEventObject(), options);
+      element.fireEvent('on' + eventName, oEvent);
+    }
+    return element;
+  }
+
+  Element.addMethods({ simulate: Event.simulate });
+})()
+//]]>
+</script>
+<script type="text/javascript">
+//<![CDATA[
+
+    (function() {
+        var init = function(){
+
+                listenAndApplyChanges('#billing\\:day', '#<?php echo $_code?>_day');
+                listenAndApplyChanges('#billing\\:month', '#<?php echo $_code?>_month');
+                listenAndApplyChanges('#billing\\:year', '#<?php echo $_code?>_year');
+
+            <?php if(!$this->isCompanyDisabled()): ?>
+                Event.observe($('<?php echo $_code ?>_is_corporation'), 'change', toggleCorporationForm);
+                toggleCorporationForm();
+                <?php if ($cocNumberCheck): ?>
+                    Event.observe($('<?php echo $_code?>_coc_number'), 'change', submitCocRequest);
+                <?php endif ?>
+            <?php endif ?>
+
+            <?php if ($hasMageWorldOSC || $hasIdevOSC): ?>
+                <?php if(!$this->isCompanyDisabled()): ?>
+                    listenAndApplyChanges('#billing\\:company', '#<?php echo $_code?>_corporation_name');
+                <?php endif ?>
+                listenAndApplyChanges('#billing\\:gender', '#<?php echo $_code?>_gender');
+                listenAndApplyChanges('#billing\\:firstname', '#<?php echo $_code?>_middlename');
+                listenAndApplyChanges('#billing\\:street1', '#<?php echo $_code?>_street');
+                <?php if ($numAddressFields > 1) { ?>
+                    listenAndApplyChanges('#billing\\:street2', '#<?php echo $_code?>_house_number');
+                <?php } ?>
+                <?php if ($numAddressFields > 2) { ?>
+                    listenAndApplyChanges('#billing\\:street3', '#<?php echo $_code?>_house_suffix');
+                <?php } ?>
+                listenAndApplyChanges('#billing\\:postcode', '#<?php echo $_code?>_postcode');
+                listenAndApplyChanges('#billing\\:city', '#<?php echo $_code?>_city');
+                listenAndApplyChanges('#billing\\:day', '#<?php echo $_code?>_day');
+                listenAndApplyChanges('#billing\\:month', '#<?php echo $_code?>_month');
+                listenAndApplyChanges('#billing\\:year', '#<?php echo $_code?>_year');
+
+            <?php endif ?>
+        };
+
+        if (document.loaded) {
+            init();
+        } else {
+            document.observe('dom:loaded', init);
+        }
+    })();
+
+    function listenAndApplyChanges(oneStepCheckoutSelector, capayableSelector) {
+
+        var $oneStepCheckoutElement = jQuery(oneStepCheckoutSelector);
+        var $capayableElement = jQuery(capayableSelector);
+
+        $oneStepCheckoutElement.on('change', function() {
+
+            var val = $oneStepCheckoutElement.val();
+
+            if (capayableSelector == '#<?php echo $_code?>_middlename' && val) {
+                names = val.split(' ');
+                val = '';
+                jQuery.each(names, function(index, name) {
+                    val += name.substring(0,1) + '. ';
+                });
+            }
+
+            if (capayableSelector == '#<?php echo $_code?>_street' || capayableSelector == '#<?php echo $_code?>_house_number' || (capayableSelector == '#<?php echo $_code?>_house_suffix' && val)) {
+
+                jQuery.ajax({
+                    method: 'get',
+                    url: '<?php echo Mage::getBaseUrl(Mage_Core_Model_Store::URL_TYPE_WEB); ?>capayable/ajax/addresssplitter',
+                    data: {address: jQuery('#billing\\:street1').val(), address2: jQuery('#billing\\:street2').val(), address3: jQuery('#billing\\:street3').val()},
+                    dataType: 'json'
+                }).done(function(data){
+                    syncAddressParts(data);
+                });
+            }
+
+            if (capayableSelector == '#<?php echo $_code?>_house_number' && val) {
+
+                var matches = val.match(/[\d]+/);
+                if(matches && matches.length > 0){
+                    var match = matches[0];
+                    var index = match.length;
+                    var suffix = val.substr(index);
+
+                    jQuery('#<?php echo $_code?>_house_suffix').val(suffix);
+                    val = match;
+                }
+            }
+
+            <?php if(!$this->isCompanyDisabled()): ?>
+                if(capayableSelector == '#<?php echo $_code?>_corporation_name') {
+                    jQuery('#<?php echo $_code?>_is_corporation').val(val ? 1 : 0);
+
+                    // Trigger the prototype event
+                    $('<?php echo $_code?>_is_corporation').simulate('change');
+                }
+            <?php endif ?>
+
+            $capayableElement.val(val);
+        });
+        $oneStepCheckoutElement.change();
+    }
+
+    function toggleCorporationForm() {
+        var elm = $('<?php echo $_code ?>_is_corporation');
+        if (elm.value == 1) {
+            $('<?php echo $_code ?>_is_sole_wrapper').show();
+            $('<?php echo $_code ?>_corporation_name_wrapper').show();
+            $('<?php echo $_code ?>_corporation_name').addClassName('required-entry');
+            $('<?php echo $_code ?>_coc_number_wrapper').show();
+            $('<?php echo $_code ?>_coc_number').addClassName('required-entry');
+        } else {
+            $('<?php echo $_code ?>_is_sole_wrapper').hide();
+            $('<?php echo $_code ?>_corporation_name_wrapper').hide();
+            $('<?php echo $_code ?>_corporation_name').removeClassName('required-entry');
+            $('<?php echo $_code ?>_coc_number_wrapper').hide();
+            $('<?php echo $_code ?>_coc_number').removeClassName('required-entry');
+        }
+    };
+
+    function submitCocRequest() {
+        new Ajax.Request("<?php echo Mage::getBaseUrl(Mage_Core_Model_Store::URL_TYPE_WEB); ?>capayable/ajax/registrationcheck", {
+            method: 'get',
+            parameters: {coc_number: $('<?php echo $_code ?>_coc_number').value},
+            onSuccess: cocRequestOnSuccess,
+            onFailure: cocRequestOnFailure
+        });
+    }
+
+    function cocRequestOnSuccess(response){
+        var json = response.responseText.evalJSON();
+        if (json.isAccepted) {
+            $('<?php echo $_code ?>_corporation_name').value = json.corporationName;
+            $('<?php echo $_code ?>_street').value = json.streetName;
+            $('<?php echo $_code ?>_house_number').value = json.houseNumber;
+            $('<?php echo $_code ?>_house_suffix').value = json.houseNumberSuffix;
+            $('<?php echo $_code ?>_postcode').value = json.zipCode;
+            $('<?php echo $_code ?>_city').value = json.city;
+        } else {
+            cocRequestOnFailure();
+        }
+    }
+
+    function cocRequestOnFailure(){
+        jQuery('#<?php echo $_code ?>_corporation_name').val();
+        jQuery('#<?php echo $_code ?>_street').val();
+        jQuery('#<?php echo $_code ?>_house_number').val();
+        jQuery('#<?php echo $_code ?>_house_suffix').val();
+        jQuery('#<?php echo $_code ?>_postcode').val();
+        jQuery('#<?php echo $_code ?>_city').val();
+    }
+
+    function syncAddressParts(data) {
+        jQuery('#<?php echo $_code ?>_street').val(data.streetName);
+        jQuery('#<?php echo $_code ?>_house_number').val(data.houseNumber);
+        jQuery('#<?php echo $_code ?>_house_suffix').val(data.houseNumberSuffix);
+    }
+//]]>
+</script>
+
+<?php } ?>

@@ -1,0 +1,49 @@
+<?xml version="1.0"?>
+<layout version="0.1.0">
+    <default>
+        <reference name="head">
+            <action method="addItem">
+                <type>js_css</type>
+                <name>capayable/capayable.css</name>
+            </action>
+        </reference>
+    </default>
+    <adminhtml_sales_order_view>
+        <reference name="order_totals">
+            <block name="capayable_fee" type="capayable/order_totals_fee" before="tax"/>
+        </reference>
+    </adminhtml_sales_order_view>
+
+    <adminhtml_sales_order_invoice_view>
+        <reference name="invoice_totals">
+            <block name="capayable_fee" type="capayable/invoice_totals_fee" before="tax"/>
+        </reference>
+    </adminhtml_sales_order_invoice_view>
+
+    <adminhtml_sales_order_invoice_new>
+        <reference name="invoice_totals">
+            <block name="capayable_fee" type="capayable/invoice_totals_fee" before="tax"/>
+        </reference>
+    </adminhtml_sales_order_invoice_new>
+
+    <adminhtml_sales_order_creditmemo_new>
+        <reference name="creditmemo_totals">
+            <block type="capayable/adminhtml_sales_order_creditmemo_totals_fee" name="capayable_fee" template="capayable/sales/order/creditmemo/new.phtml" before="tax" />
+
+            <!--block type="adminhtml/sales_order_totals_item" name="capayable_fee" template="sales/order/totals/item.phtml" before="tax">
+                <action method="setSourceField"><value>capayable_fee</value></action>
+                <action method="setLabel"><value>Capayable Fee</value></action>
+            </block-->
+        </reference>
+    </adminhtml_sales_order_creditmemo_new>
+
+    <adminhtml_sales_order_creditmemo_view>
+        <reference name="creditmemo_totals">
+            <block type="capayable/adminhtml_creditmemo_totals_fee" name="capayable_fee" template="capayable/sales/order/creditmemo/view.phtml" before="tax" />
+            <!--block type="adminhtml/sales_order_totals_item" name="capayable_fee" template="sales/order/totals/item.phtml" before="tax">
+                <action method="setSourceField"><value>capayable_fee</value></action>
+                <action method="setLabel"><value>Capayable Fee</value></action>
+            </block-->
+        </reference>
+    </adminhtml_sales_order_creditmemo_view>
+</layout>

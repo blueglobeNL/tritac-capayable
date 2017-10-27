@@ -1,0 +1,94 @@
+<?php
+    $_helper    = Mage::helper('capayable');
+    $_version   = Mage::getConfig()->getModuleConfig("Tritac_Capayable")->version;
+?>
+<tr>
+    <td>
+        <h2 class="content-heading"><?php echo $_helper->__('Capayable v%s', $_version);?></h2>
+        <table id="supportWrap" cellpadding="0" cellspacing="0">
+            <tr>
+                <td>
+                    <p><strong><?php echo $_helper->__('Sales');?></strong></p>
+                    <p><?php echo $_helper->__('For questions and information related to your Capayable account, please contact Capayable.');?></p>
+                    <table class="contact capayable">
+                        <tr>
+                            <td class="first" width="100"><?php echo $_helper->__('Phone');?>:</td>
+                            <td class="last">+31 (0)40 - 259 50 72</td>
+                        </tr>
+                        <tr>
+                            <td><?php echo $_helper->__('Email');?>:</td>
+                            <td class="last"><a href="mailto:info@capayable.com">info@capayable.com</a></td>
+                        </tr>
+                        <tr>
+                            <td class="first"><?php echo $_helper->__('Website');?>:</td>
+                            <td class="last"><a target="_blank" href="http://www.capayable.com/">www.capayable.com</a></td>
+                        </tr>
+                    </table>
+                    <br />
+                </td>
+                <td>
+                    <p><strong><?php echo $_helper->__('Extension support and configuration questions');?></strong></p>
+                    <p><?php echo $_helper->__('For configuration problems, extension conflicts or bugs, please contact BlueGlobe.');?></p>
+                    <table class="contact capayable">
+                        <tr>
+                            <td class="first" width="100"><?php echo $_helper->__('Phone');?>:</td>
+                            <td class="last">+31 (0)6 - 17 066 227</td>
+                        </tr>
+                        <tr>
+                            <td><?php echo $_helper->__('Email');?>:</td>
+                            <td class="last"><a href="mailto:support@blueglobe.nl">support@blueglobe.nl</a></td>
+                        </tr>
+                        <tr>
+                            <td class="first"><?php echo $_helper->__('Website');?>:</td>
+                            <td class="last"><a target="_blank" href="http://www.blueglobe.nl/">www.blueglobe.nl</a></td>
+                        </tr>
+                    </table>
+                    <br />
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    <p><strong><?php echo $_helper->__('Backoffice locations');?></strong></p>
+                    <table class="contact capayable">
+                        <tr>
+                            <td class="first" width="100"><?php echo $_helper->__('Backoffice - Test'); ?>:</td>
+                            <td class="last"><a href="https://capayable-api-admin-test.tritac.com/" target="_blank">https://capayable-api-admin-test.tritac.com/</a></td>                            </tr>
+                        <tr>
+                            <td class="first"><?php echo $_helper->__('Backoffice - Live');?>:</td>
+                            <td class="last"><a href="https://capayable-api-admin.tritac.com/" target="_blank">https://capayable-api-admin.tritac.com/</a></td>
+                        </tr>
+                    </table>
+                    <br />
+                </td>
+                <td>
+                    <p><strong><?php echo $_helper->__('Documents')?></strong></p>
+                    <ul class="capayable_docs">
+                        <li class="pdf"><a href="http://capayable-api.tritac.com/" target="_blank">Capayable Documentation</a></li>
+                    </ul>
+                    <br />
+                </td>
+            </tr>
+            <tr>
+                <td colspan="2">
+                    <p><strong><?php echo $_helper->__('Magento &amp; 3rd party version compatibility');?></strong></p>
+                    <table class="compatibility capayable">
+                        <tr>
+                            <td class="first" width="220"><?php echo $_helper->__('Magento Community Edition version');?>: </td>
+                            <td class="last">v1.6, v1.7, v1.8 &amp; v1.9</td>
+                        </tr>
+                        <tr>
+                            <td class="first">OneStepCheckout.com:</td>
+                            <td class="last">v4.1.3</td>
+                        </tr>
+                        <tr>
+                            <td class="first">Postcode.nl API:</td>
+                            <td class="last">v1.2.4.0</td>
+                        </tr>
+                    </table>
+                    <br />
+                    <p><?php echo $_helper->__('We cannot guarantee perfect functionality of the Capayable extension when you intend to use the extension on a version of Magento that is not supported or when you intend to use the extension together with a 3rd part extension that is not supported. If you have any questions please contact Capayable.'); ?></p>
+                </td>
+            </tr>
+        </table>
+    </td>
+</tr>
