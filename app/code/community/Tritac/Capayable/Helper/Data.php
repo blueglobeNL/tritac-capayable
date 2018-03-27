@@ -121,9 +121,9 @@ class Tritac_Capayable_Helper_Data extends Mage_Core_Helper_Abstract {
     public function getMode($store=null) {
         $configMode = Mage::getStoreConfigFlag('payment/capayable/test',$store);
         if($configMode) {
-            return Tritac_CapayableApiClient_Enums_Environment::TEST;
+            return 'test';
         } else {
-            return Tritac_CapayableApiClient_Enums_Environment::PROD;
+            return 'production';
         }
     }
 

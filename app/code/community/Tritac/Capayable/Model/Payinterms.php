@@ -11,8 +11,12 @@
 
 class Tritac_Capayable_Model_Payinterms extends Mage_Payment_Model_Method_Abstract
 {
-    const TEST_URL 			    = 'https://capayable-api-test.tritac.com';
-    const PROD_URL 			    = 'https://capayable-api.tritac.com';
+    const TEST_URL  = 'https://capayable-api-test.tritac.com';
+    const PROD_URL 	= 'https://capayable-api.tritac.com';
+
+    const MALE      = 'MALE';
+    const FEMALE    = 'FEMALE';
+    const UNKNOWN   = 'UNKNOWN';
 
     /**
      * Unique internal payment method identifier
@@ -21,7 +25,7 @@ class Tritac_Capayable_Model_Payinterms extends Mage_Payment_Model_Method_Abstra
     protected $_paymentMethod       = 'Capayable Pay in terms';
     protected $_formBlockType       = 'capayable/form';
     protected $_infoBlockType       = 'capayable/info';
-    protected $_logging             = false;
+    protected $_logging             = true;
     protected $_logfile;
     protected $_url                 = '';
 
@@ -37,30 +41,16 @@ class Tritac_Capayable_Model_Payinterms extends Mage_Payment_Model_Method_Abstra
     protected $_canRefundInvoicePartial = true;
     protected $_canVoid             = false;
 
-    // Capayable API client
-    protected $_client              = null;
-
     public function __construct()
     {
         $date               = date('Y-m-d');
         $this->_logfile     = 'capayable_'.$date.'.log';
-        $public_key         = Mage::getStoreConfig('payment/capayable/public_key');
-        $secret_key         = Mage::getStoreConfig('payment/capayable/secret_key');
-        if(Mage::helper('capayable')->getMode() == null || Mage::helper('capayable')->getMode() == Tritac_CapayableApiClient_Enums_Environment::PROD) {
+        if(Mage::helper('capayable')->getMode() == null || Mage::helper('capayable')->getMode() == 'production') {
             $this->_url     = self::PROD_URL;
         } else {
             $this->_url     = self::TEST_URL;
         }
 
-        if($this->_logging){
-            Mage::log('In __construct (Payinterms)', null, $this->_logfile);
-        }
-
-        /**
-         * Initialize new api client
-         * @var Tritac_CapayableApiClient_Client _client
-         */
-        $this->_client      = new Tritac_CapayableApiClient_Client($public_key, $secret_key, Mage::helper('capayable')->getMode());
         parent::__construct();
     }
 
@@ -93,7 +83,7 @@ class Tritac_Capayable_Model_Payinterms extends Mage_Payment_Model_Method_Abstra
         if(!$result->getIsAccepted()) {
             throw new Mage_Payment_Model_Info_Exception(
                 Mage::helper('capayable')->__('The payment was refused by Capayable') . ": " .
-                Mage::helper('capayable')->__(Tritac_CapayableApiClient_Enums_RefuseReason::toString( $result->getRefuseReason() ) ) . " " .
+                Mage::helper('capayable')->__($result->getRefuseReason()) . " " .
                 Mage::helper('capayable')->__('For additional information contact Capayable on +31 40 - 259 5072.')
             );
         }
@@ -101,7 +91,7 @@ class Tritac_Capayable_Model_Payinterms extends Mage_Payment_Model_Method_Abstra
         if(!$result->getFirstInstallmentAmount()) {
             throw new Mage_Payment_Model_Info_Exception(
                 Mage::helper('capayable')->__('There was an error during commmunication with Capayable') . ": " .
-                Mage::helper('capayable')->__(Tritac_CapayableApiClient_Enums_RefuseReason::toString( $result->getRefuseReason() ) ) . " " .
+                Mage::helper('capayable')->__($result->getRefuseReason()) . " " .
                 Mage::helper('capayable')->__('For additional information contact Capayable on +31 40 - 259 5072.')
             );
         }
@@ -216,12 +206,11 @@ class Tritac_Capayable_Model_Payinterms extends Mage_Payment_Model_Method_Abstra
 
     /**
      * Customer credit check with Capayable.
-     * Can take quote or order object.
      *
      * @param Tritac_Capayable_Model_Customer $_customer
-     * @param float $amount
+     * @param $amount
      * @param bool $isFinal
-     * @return bool|Tritac_CapayableApiClient_Models_CreditCheckResponse
+     * @return \Swagger\Client\Model\CreditCheckResult
      */
     public function checkCredit(Tritac_Capayable_Model_Customer $_customer, $amount, $isFinal = false)
     {
@@ -234,11 +223,11 @@ class Tritac_Capayable_Model_Payinterms extends Mage_Payment_Model_Method_Abstra
         $v2Model->setLastName($_customer->getCustomerLastname());
         $v2Model->setInitials($_customer->getCustomerMiddlename());
 
-        $gender     = Tritac_CapayableApiClient_Enums_Gender::UNKNOWN;
+        $gender     = self::UNKNOWN;
         if($_customer->getCustomerGender() == 1) {
-            $gender = Tritac_CapayableApiClient_Enums_Gender::MALE;
+            $gender = self::MALE;
         }elseif($_customer->getCustomerGender() == 2) {
-            $gender = Tritac_CapayableApiClient_Enums_Gender::FEMALE;
+            $gender = self::FEMALE;
         }
         $v2Model->setGender($gender);
 

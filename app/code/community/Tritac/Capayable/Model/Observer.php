@@ -8,7 +8,7 @@
 
 class Tritac_Capayable_Model_Observer
 {
-    protected $_logging = false;
+    protected $_logging = true;
     protected $_logfile;
 
     public function __construct()
@@ -92,10 +92,13 @@ class Tritac_Capayable_Model_Observer
                  * Register invoice with Capayable
                  */
                 $isApiInvoiceAccepted = $paymentInstance->processApiInvoice($invoice);
-
+                if($this->_logging) {
+                    Mage::log('sendInvoice isApiInvoiceAccepted:', null, $this->_logfile);
+                    Mage::log($isApiInvoiceAccepted, null, $this->_logfile);
+                }
                 //if ($isApiInvoiceAccepted) {
                     $invoice->getOrder()->setIsInProcess(true);
-                    $history = $invoice->getOrder()->addStatusHistoryComment(
+                    $invoice->getOrder()->addStatusHistoryComment(
                         'Invoice created and email send', true
                     );
                     $invoice->sendEmail(true, '');
@@ -152,6 +155,7 @@ class Tritac_Capayable_Model_Observer
 
                 Mage::getConfig()->reinit();
                 Mage::app()->reinitStores();
+
             } else {
                 $this->_getSession()->addError(Mage::helper('capayable')->__('Failed to send the invoice.'));
             }
@@ -209,8 +213,10 @@ class Tritac_Capayable_Model_Observer
         // why did they make this a float in the past? it is very dangerous to do math with floats in PHP...
         foreach ($quote->getAllAddresses() as $address) {
             // why add something that you set to zero???? I really don't understand...
-            Mage::log('sl_ord_crdm_sv_bfr adrs getCapFee : '.$address->getCapayableFee(), null, $this->_logfile);
-            Mage::log('sl_ord_crdm_sv_bfr adrs getBaseCapFee : '.$address->getBaseCapayableFee(), null, $this->_logfile);
+            if($this->_logging) {
+                Mage::log('sl_ord_crdm_sv_bfr adrs getCapFee : ' . $address->getCapayableFee(), null, $this->_logfile);
+                Mage::log('sl_ord_crdm_sv_bfr adrs getBaseCapFee : ' . $address->getBaseCapayableFee(), null, $this->_logfile);
+            }
             $quote->setCapayableFee((float) $quote->getCapayableFee()+$address->getCapayableFee());
             $quote->setBaseCapayableFee((float) $quote->getBaseCapayableFee()+$address->getBaseCapayableFee());
 
@@ -220,65 +226,82 @@ class Tritac_Capayable_Model_Observer
     }
 
     public function sales_order_creditmemo_save_before(Varien_Event_Observer $observer){
-        Mage::log('sl_ord_crdm_sv_bfr ', null, $this->_logfile);
+        if($this->_logging) {
+            Mage::log('sales_order_creditmemo_save_before ', null, $this->_logfile);
+        }
         $post = Mage::app()->getFrontController()->getAction()->getRequest()->getPost('creditmemo');
+        if($this->_logging) {
+            Mage::log($post, null, $this->_logfile);
+        }
 
         // If the order was not payed with capayable, the field 'capayable_amount' will not be available in the creditmemo totals form, so we skip it.
-        if(!isset($post['capayable_amount'])){
+
+        // very funny :-( it appears that if you make a credit memo and you send a copy to the customer with a comment,
+        // the credit memo post will not always(!) contain the capayable_amount!
+        //if(!isset($post['capayable_amount'])){
+         //   return NULL;
+        //}
+
+        $cm         = $observer->getCreditmemo();
+        $order      = $cm->getOrder();
+        $payment    = $order->getPayment();
+        $paymntInst = $payment->getMethodInstance();
+        $paymntCode = $paymntInst->getCode();  // is capayable_postpayment of capayable_payinterms
+        if(substr($paymntCode, 0, 9) != 'capayable'){
             return NULL;
         }
-        // welke ???
-        Mage::log('sl_ord_crdm_sv_bfr pst cap am '.$post['capayable_amount'], null, $this->_logfile);
-        $baseCreditCapayableAmount	= (float)$post['capayable_amount'];
-        Mage::log('sl_ord_crdm_sv_bfr pst cap am maar dan als float '.$baseCreditCapayableAmount, null, $this->_logfile);
-        $cm                         = $observer->getCreditmemo();
-        $order                      = $cm->getOrder();
-        if($this->_logging){
-            Mage::log('sales_order_creditmemo_save_before capayable_amount is :'.$baseCreditCapayableAmount, null, $this->_logfile);
+
+        if(!isset($post['capayable_amount'])){
+            if($this->_logging) {
+                Mage::log('no capayable_amount in post', null, $this->_logfile);
+            }
+            // okay, then set it to 0
+            $baseCreditCapayableAmount = 0;
+        } else {
+            $baseCreditCapayableAmount = (float)$post['capayable_amount'];
+            if ($this->_logging) {
+                Mage::log('baseCreditCapayableAmount : ' . $baseCreditCapayableAmount, null, $this->_logfile);
+            }
         }
 
-        $maxAllowed = ($order->getBaseCapayableFee() + $order->getBaseCapayableFeeTaxAmount()) -
+        $maxAllowed     = ($order->getBaseCapayableFee() + $order->getBaseCapayableFeeTaxAmount()) -
             ($order->getBaseCapayableFeeRefunded() + $order->getBaseCapayableFeeTaxAmountRefunded()); // 5.95
-        Mage::log('sl_o.. maxallowed:  '.$maxAllowed, null, $this->_logfile);
-
-        // far more safe:
-        $capFeeAndTax           = bcadd($order->getBaseCapayableFee(), $order->getBaseCapayableFeeTaxAmount(), 4);
-        $capFeeAndTaxRefunded   = bcadd($order->getBaseCapayableFeeRefunded(), $order->getBaseCapayableFeeTaxAmountRefunded(), 4);
-        $maxAllowed2             = bcsub($capFeeAndTax, $capFeeAndTaxRefunded);
-        Mage::log('sl_o.. maxallowed2:  '.$maxAllowed2, null, $this->_logfile);
-
+        if($this->_logging) {
+            Mage::log('maxallowed : ' . $maxAllowed, null, $this->_logfile);
+        }
         // The creditmemo numbers are allready modified by Tritac_Capayable_Model_Creditmemo_Total
         // The payment fee from the order is already added to the GrandTotal in that Model.
         // That has to be correct according to the submitted payment-fee refund.
 
-        $orgBaseCapFee          = $cm->getBaseCapayableFee();
-        $orgBaseCapFeeTaxAm     = $cm->getBaseCapayableFeeTaxAmount();
+        $orgBaseCapFee      = $cm->getBaseCapayableFee();
+        $orgBaseCapFeeTaxAm = $cm->getBaseCapayableFeeTaxAmount();
         if($this->_logging){
-            Mage::log('sales_order_creditmemo_save_before _orgBaseCapFee is :'.$orgBaseCapFee, null, $this->_logfile);
-            Mage::log('sales_order_creditmemo_save_before _orgBaseCapFeeTaxAm is :'.$orgBaseCapFeeTaxAm, null, $this->_logfile);
+            Mage::log('orgBaseCapFee :'.$orgBaseCapFee, null, $this->_logfile);
+            Mage::log('orgBaseCapFeeTaxAm :'.$orgBaseCapFeeTaxAm, null, $this->_logfile);
         }
 
-        // $_baseTotalCorrection must be applied on creditmemo.grand_total and creditmemo.base_grand_total
+        // $baseTotalCorrection must be applied on creditmemo.grand_total and creditmemo.base_grand_total
+        $baseTotalCorrection = $baseCreditCapayableAmount - ($orgBaseCapFee + $orgBaseCapFeeTaxAm);
         // to avoid "Warning: Division by zero in ..." errors, check first:
         if($orgBaseCapFee > 0 || $orgBaseCapFeeTaxAm > 0) {
-            $orgBaseCapFeeTotal     = bcadd($orgBaseCapFee,$orgBaseCapFeeTaxAm,4);
-            // okay, do whatever you need to do:
-            $baseTotalCorrection    = bcsub($baseCreditCapayableAmount, $orgBaseCapFeeTotal, 4);
-            $factor                 = bcdiv($baseCreditCapayableAmount, $orgBaseCapFeeTotal, 4);
-            $baseRefund             = bcmul($factor, $orgBaseCapFee,4);
-            $baseTaxRefund          = bcmul($factor, $orgBaseCapFeeTaxAm, 4);
-            $baseTaxCorrection      = bcsub($baseTaxRefund, $orgBaseCapFeeTaxAm, 4);
+            $factor = $baseCreditCapayableAmount / ($orgBaseCapFee + $orgBaseCapFeeTaxAm);
         } else {
-            //ja wat eigenlijk?
-            $baseTotalCorrection    = $baseCreditCapayableAmount;
-            $baseRefund             = 0;
-            $baseTaxRefund          = 0;
-            $baseTaxCorrection      = 0;
+            $factor = 0;
         }
-        if($baseCreditCapayableAmount > $maxAllowed){
+        $baseRefund	        = $factor * $orgBaseCapFee;
+        $baseTaxRefund	    = $factor * $orgBaseCapFeeTaxAm;
+        $baseTaxCorrection	= $baseTaxRefund - $orgBaseCapFeeTaxAm;
+        if ($this->_logging) {
+            Mage::log('baseRefund : '.$baseRefund, null, $this->_logfile);
+            Mage::log('baseTaxRefund : '.$baseTaxRefund, null, $this->_logfile);
+            Mage::log('baseTaxCorrection : '.$baseTaxCorrection, null, $this->_logfile);
+        }
 
-            Mage::log('sl.. baseCreditCapAm : '.$baseCreditCapayableAmount, null, $this->_logfile);
-            Mage::log('sl.. maxAllowed : '.$maxAllowed, null, $this->_logfile);
+        if($baseCreditCapayableAmount > $maxAllowed) {
+            if ($this->_logging) {
+                Mage::log('baseCreditCapAm (' . $baseCreditCapayableAmount.') > maxAllowed (' . $maxAllowed . ')', null, $this->_logfile);
+                Mage::log('Maximum Payment Fee amount allowed to refund is: (Incl. Tax)' . $maxAllowed, null, $this->_logfile);
+            }
             Mage::throwException(Mage::helper('capayable')->__('Maximum Payment Fee amount allowed to refund is: %s (Incl. Tax)',
                 ($order->getBaseCurrency()->format($maxAllowed,null,false)))
             );
@@ -292,7 +315,6 @@ class Tritac_Capayable_Model_Observer
         $order->setTaxRefunded($cm->getTaxAmount());
         $order->setBaseTotalRefunded($order->getBaseTotalOfflineRefunded() + $order->getBaseTotalOnlineRefunded());
         $order->setTotalRefunded($order->getTotalOfflineRefunded() + $order->getTotalOnlineRefunded());
-
         $cm->setBaseCapayableFee($baseRefund);
         $cm->setCapayableFee($baseRefund);
         $cm->setBaseCapayableFeeTaxAmount($baseTaxRefund);
@@ -301,6 +323,17 @@ class Tritac_Capayable_Model_Observer
         $order->setCapayableFeeRefunded($baseRefund);
         $order->setBaseCapayableFeeTaxAmountRefunded($baseTaxRefund);
         $order->setCapayableFeeTaxAmountRefunded($baseTaxRefund);
+
+        $baseTotalOfflineRefunded = $order->getBaseTotalOfflineRefunded();
+        if ($this->_logging) {
+            Mage::log('base total offline refunded ' . $baseTotalOfflineRefunded, null, $this->_logfile);
+        }
+
+        $paymntInst->refund($payment, $baseTotalOfflineRefunded);
+
+        if ($this->_logging) {
+            Mage::log('sales_order_creditmemo_save_before done ', null, $this->_logfile);
+        }
     }
 
     /**

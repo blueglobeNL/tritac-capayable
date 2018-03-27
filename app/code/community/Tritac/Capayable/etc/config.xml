@@ -10,7 +10,7 @@
 <config>
     <modules>
         <Tritac_Capayable>
-            <version>2.5.0</version>
+            <version>2.5.1</version>
         </Tritac_Capayable>
     </modules>
 
@@ -234,16 +234,16 @@
             <capayable_postpayment>
                 <active>0</active>
                 <model>capayable/postpayment</model>
-                <title>Capayable Postpayment</title>
+                <title>Capayable - Achteraf betalen</title>
                 <email_customer>1</email_customer>
                 <payment_action>authorize</payment_action>
                 <sort_order>10</sort_order>
                 <order_status>processing</order_status>
-                <instructions><![CDATA[Please transfer the amount due to
+                <instructions><![CDATA[Maak het bedrag over naar:
 Stichting Beheer Gelden Capayable
 IBAN NL42INGB0006528043
-Use the following number as
-the payment reference: %s]]>
+
+Gebruik het factuurnummer als de betaalreferentie: %s]]>
 
                 </instructions>
                 <group>capayable</group>
@@ -252,19 +252,18 @@ the payment reference: %s]]>
             <capayable_payinterms>
                 <active>0</active>
                 <model>capayable/payinterms</model>
-                <title>Capayable Pay in terms</title>
+                <title>Capayable – Betaal in 3 termijnen (0% rente)</title>
                 <email_customer>1</email_customer>
                 <payment_action>authorize</payment_action>
                 <sort_order>20</sort_order>
                 <order_status>processing</order_status>
-                <instructions><![CDATA[Please pay first amount with iDeal, then
-transfer the next 2 amounts due to
-Stichting Beheer Gelden Capayable
-IBAN NL42INGB0006528043
-Use the following number as
-the payment reference: %s]]>
-
+                <instructions><![CDATA[Je betaalt de bestelling in drie gelijke termijnen.
+De eerste termijn betaal je nu direct via iDEAL. Van Capayable ontvang je
+ vervolgens een iDEAL link voor de tweede (dag 30) en derde (dag 60) termijn.]]>
                 </instructions>
+                <min_order_total>100</min_order_total>
+                <cost>0</cost>
+                <foreigncost>0</foreigncost>
                 <group>capayable</group>
                 <devlogfile>dev.capayable.log</devlogfile>
             </capayable_payinterms>

@@ -3,12 +3,14 @@ class Tritac_Capayable_AjaxController extends Mage_Core_Controller_Front_Action{
 
 	public function registrationcheckAction() {
 
-		$helper     = Mage::helper('capayable');
-		$public_key = $helper->getPublicKey();
-		$secret_key = $helper->getSecretKey();
-		$mode       = $helper->getMode();
+		$publicKey  = Mage::helper('capayable')->getPublicKey();
+		if(Mage::helper('capayable')->getMode() == null || Mage::helper('capayable')->getMode() == 'production') {
+            $url    = 'https://capayable-api.tritac.com';
+        } else {
+            $url    = 'https://capayable-api-test.tritac.com';
+        }
 
-		$client = new Tritac_CapayableApiClient_Client($public_key, $secret_key, $mode);
+        $v2Model    = new  Tritacv2_Model_RegistrationCheckRequestV2Model();
 
 		$coc_number = $this->getRequest()->getParam("coc_number");
 		if (!$coc_number) {
@@ -16,26 +18,34 @@ class Tritac_Capayable_AjaxController extends Mage_Core_Controller_Front_Action{
 		}
 
 		$coc_number = intval($coc_number);
+        $v2Model->setCoCNumber($coc_number);
 
-    	$registrationCheckRequest = new Tritac_CapayableApiClient_Models_RegistrationCheckRequest($coc_number);
-		$registrationCheckResult = $client->doRegistrationCheck($registrationCheckRequest);
+        try {
+            $apiConfig      = new Tritacv2_Configuration();
+            $apiConfig->setApiKey('apikey', $publicKey);
+            $apiConfig->setHost($url);
+            $apiClient      = new Tritacv2_ApiClient($apiConfig);
+            $regiCheckApi   = new Tritacv2_Api_RegistrationCheckApi($apiClient);
+            $regiCheckRslts = $regiCheckApi->registrationCheckV2Post($v2Model);
+            $arrayData = array();
+            $arrayData['isAccepted']        = $regiCheckRslts->getIsAccepted();
+            $arrayData['houseNumber']       = $regiCheckRslts->getHouseNumber();
+            $arrayData['houseNumberSuffix'] = $regiCheckRslts->getHouseNumberSuffix();
+            $arrayData['zipCode']           = $regiCheckRslts->getZipCode();
+            $arrayData['city']              = $regiCheckRslts->getCity();
+            $arrayData['countryCode']       = $regiCheckRslts->getCountryCode();
+            $arrayData['phoneNumber']       = $regiCheckRslts->getPhoneNumber();
+            $arrayData['corporationName']   = $regiCheckRslts->getCorporationName();
+            $arrayData['cocNumber']         = $coc_number;
+            $arrayData['streetName']        = $regiCheckRslts->getStreetName();
 
-		$arrayData = array();
-		$arrayData['isAccepted']        = $registrationCheckResult->getIsAccepted();
-		$arrayData['houseNumber']       = $registrationCheckResult->getHouseNumber();
-		$arrayData['houseNumberSuffix'] = $registrationCheckResult->getHouseNumberSuffix();
-		$arrayData['zipCode']           = $registrationCheckResult->getZipCode();
-		$arrayData['city']              = $registrationCheckResult->getCity();
-		$arrayData['countryCode']       = $registrationCheckResult->getCountryCode();
-		$arrayData['phoneNumber']       = $registrationCheckResult->getPhoneNumber();
-		$arrayData['corporationName']   = $registrationCheckResult->getCorporationName();
-		$arrayData['cocNumber']         = $coc_number;
-		$arrayData['streetName']        = $registrationCheckResult->getStreetName();
+            $jsonData = json_encode($arrayData);
 
-		$jsonData = json_encode($arrayData);
-
-		$this->getResponse()->setHeader('Content-type', 'application/json');
-		$this->getResponse()->setBody($jsonData);
+            $this->getResponse()->setHeader('Content-type', 'application/json');
+            $this->getResponse()->setBody($jsonData);
+        } catch (Exception $e) {
+            Mage::log('Exception when calling registrationCheckApi->registrationCheckV2Post: '. $e->getMessage(), null, $this->_logfile);
+        }
 
 	}
 

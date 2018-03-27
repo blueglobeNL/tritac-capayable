@@ -2,11 +2,11 @@
   "name": "tritac\/capayable",
   "type": "magento-module",
   "license": "proprietary",
-  "description": "Tritac Capayable Payment extension for Magento",
+  "description": "BlueGlobe Capayable Payment extension for Magento",
   "require": {
     "magento-hackathon/magento-composer-installer": "*"
   },
   "authors":[{
-    "name": "Tritac.com"
+    "name": "BlueGlobe"
   }]
 }
