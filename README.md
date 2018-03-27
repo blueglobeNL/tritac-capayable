@@ -3,7 +3,7 @@
 ### What is this repository for? ###
 
 * Tritac Capayable extension for Magento 1.9.*
-* Version 2.5.0
+* Version 2.5.1
 
 ### How do I get set up? ###
 
